@@ -14,6 +14,8 @@ import Paper from "@mui/material/Paper";
 import Box from "@mui/material/Box";
 import IconButton from "@mui/material/IconButton";
 import DeleteIcon from "@mui/icons-material/Delete";
+import Avatar from "@mui/material/Avatar";
+import LightbulbIcon from "@mui/icons-material/Lightbulb";
 
 function calculateAverages(entries: { date: string; kwh: number }[]) {
   if (entries.length < 2) return { averages: [], yearlyProjection: null };
@@ -88,60 +90,76 @@ const EnergyUsagePage = () => {
   if (!hydrated) return null;
 
   return (
-    <Container maxWidth="sm" sx={{ mt: 8 }}>
-      <Typography variant="h4" gutterBottom align="center">
-        Energy Usage Tracker
-      </Typography>
-      <Box display="flex" gap={2} mb={3}>
-        <TextField
-          label="Date"
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          InputLabelProps={{ shrink: true }}
-          fullWidth
-        />
-        <TextField
-          label="KWH"
-          type="number"
-          value={kwh}
-          onChange={(e) => setKwh(e.target.value)}
-          fullWidth
-        />
-        <Button variant="contained" onClick={handleAdd} sx={{ minWidth: 120 }}>
-          Add
-        </Button>
+    <Container maxWidth="sm" sx={{ mt: 8, mb: 8, p: 0 }}>
+      <Box display="flex" flexDirection="column" alignItems="center" mb={3}>
+        <Avatar sx={{ bgcolor: "#ffe066", width: 72, height: 72, mb: 1 }}>
+          <LightbulbIcon sx={{ color: "#ffb300", fontSize: 48 }} />
+        </Avatar>
+        <Typography variant="h3" fontWeight={700} color="#2e026d" gutterBottom align="center">
+          Energy Usage Tracker
+        </Typography>
+        <Typography variant="subtitle1" color="#555" align="center" mb={2}>
+          Track your energy usage, see averages, and project your yearly consumption.
+        </Typography>
       </Box>
-      <TableContainer component={Paper} sx={{ mb: 3 }}>
-        <Table size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell>Date</TableCell>
-              <TableCell align="right">KWH</TableCell>
-              <TableCell align="right">Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {entries.map((entry, idx) => (
-              <TableRow key={idx}>
-                <TableCell>{entry.date}</TableCell>
-                <TableCell align="right">{entry.kwh}</TableCell>
-                <TableCell align="right">
-                  <IconButton aria-label="delete" onClick={() => handleDelete(idx)} size="small">
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
-                </TableCell>
+      <Paper elevation={4} sx={{ p: 3, mb: 4, background: "linear-gradient(135deg, #ffe066 0%, #ffb300 100%)" }}>
+        <Box display="flex" gap={2} mb={2}>
+          <TextField
+            label="Date"
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            fullWidth
+            sx={{ background: "#fff", borderRadius: 1 }}
+          />
+          <TextField
+            label="KWH"
+            type="number"
+            value={kwh}
+            onChange={(e) => setKwh(e.target.value)}
+            fullWidth
+            sx={{ background: "#fff", borderRadius: 1 }}
+          />
+          <Button variant="contained" onClick={handleAdd} sx={{ minWidth: 120, bgcolor: "#2e026d", ':hover': { bgcolor: "#4b2997" } }}>
+            Add
+          </Button>
+        </Box>
+      </Paper>
+      <Paper elevation={2} sx={{ mb: 4 }}>
+        <TableContainer>
+          <Table size="small">
+            <TableHead sx={{ background: "#f3e5f5" }}>
+              <TableRow>
+                <TableCell>Date</TableCell>
+                <TableCell align="right">KWH</TableCell>
+                <TableCell align="right">Actions</TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+            </TableHead>
+            <TableBody>
+              {entries.map((entry, idx) => (
+                <TableRow key={idx} sx={{ background: idx % 2 === 0 ? "#fffde7" : "#fff" }}>
+                  <TableCell>{entry.date}</TableCell>
+                  <TableCell align="right">{entry.kwh}</TableCell>
+                  <TableCell align="right">
+                    <IconButton aria-label="delete" onClick={() => handleDelete(idx)} size="small">
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Paper>
       {averages.length > 0 && (
         <Box mb={2}>
-          <Typography variant="h6">Averages</Typography>
-          <TableContainer component={Paper}>
+          <Typography variant="h6" color="#2e026d" fontWeight={600} mb={1}>
+            Averages
+          </Typography>
+          <TableContainer component={Paper} sx={{ mb: 2 }}>
             <Table size="small">
-              <TableHead>
+              <TableHead sx={{ background: "#f3e5f5" }}>
                 <TableRow>
                   <TableCell>From</TableCell>
                   <TableCell>To</TableCell>
@@ -152,7 +170,7 @@ const EnergyUsagePage = () => {
               </TableHead>
               <TableBody>
                 {averages.map((a, idx) => (
-                  <TableRow key={idx}>
+                  <TableRow key={idx} sx={{ background: idx % 2 === 0 ? "#ede7f6" : "#fff" }}>
                     <TableCell>{a.from}</TableCell>
                     <TableCell>{a.to}</TableCell>
                     <TableCell align="right">{a.days.toFixed(1)}</TableCell>
@@ -166,9 +184,11 @@ const EnergyUsagePage = () => {
         </Box>
       )}
       {yearlyProjection && (
-        <Typography variant="h6" align="center" color="primary">
-          Projected 12-month Consumption: {yearlyProjection.toFixed(2)} KWH
-        </Typography>
+        <Paper elevation={3} sx={{ p: 2, background: "linear-gradient(90deg, #b388ff 0%, #ffe066 100%)" }}>
+          <Typography variant="h6" align="center" color="#2e026d" fontWeight={700}>
+            Projected 12-month Consumption: {Math.round(yearlyProjection).toLocaleString("de-DE")} KWH
+          </Typography>
+        </Paper>
       )}
     </Container>
   );
