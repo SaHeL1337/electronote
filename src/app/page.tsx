@@ -1,53 +1,176 @@
-import Link from "next/link";
+"use client";
+import React, { useState, useEffect } from "react";
+import Container from "@mui/material/Container";
+import Typography from "@mui/material/Typography";
+import TextField from "@mui/material/TextField";
+import Button from "@mui/material/Button";
+import Table from "@mui/material/Table";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableContainer from "@mui/material/TableContainer";
+import TableHead from "@mui/material/TableHead";
+import TableRow from "@mui/material/TableRow";
+import Paper from "@mui/material/Paper";
+import Box from "@mui/material/Box";
+import IconButton from "@mui/material/IconButton";
+import DeleteIcon from "@mui/icons-material/Delete";
 
-import { LatestPost } from "~/app/_components/post";
-import { api, HydrateClient } from "~/trpc/server";
+function calculateAverages(entries: { date: string; kwh: number }[]) {
+  if (entries.length < 2) return { averages: [], yearlyProjection: null };
+  const averages = [];
+  let totalKwh = 0;
+  let totalDays = 0;
+  for (let i = 1; i < entries.length; i++) {
+    const prev = entries[i - 1];
+    const curr = entries[i];
+    if (!prev || !curr) continue;
+    const days =
+      (new Date(curr.date).getTime() - new Date(prev.date).getTime()) /
+      (1000 * 60 * 60 * 24);
+    const kwhDiff = curr.kwh - prev.kwh;
+    averages.push({
+      from: prev.date,
+      to: curr.date,
+      avg: days > 0 ? kwhDiff / days : 0,
+      days,
+      kwhDiff,
+    });
+    totalKwh += kwhDiff;
+    totalDays += days;
+  }
+  const avgPerDay = totalDays > 0 ? totalKwh / totalDays : 0;
+  const yearlyProjection = avgPerDay * 365;
+  return { averages, yearlyProjection };
+}
 
-export default async function Home() {
-  const hello = await api.post.hello({ text: "from tRPC" });
+const LOCAL_STORAGE_KEY = "energy-usage-entries";
 
-  void api.post.getLatest.prefetch();
+const getToday = () => {
+  // Current date: 25. April 2025
+  return "2025-04-25";
+};
+
+const EnergyUsagePage = () => {
+  const [entries, setEntries] = useState<{ date: string; kwh: number }[]>([]);
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (saved) setEntries(JSON.parse(saved));
+    setHydrated(true);
+  }, []);
+  const lastKwh = entries.length > 0 ? entries[entries.length - 1].kwh : 0;
+  const [date, setDate] = useState(getToday());
+  const [kwh, setKwh] = useState(lastKwh.toString());
+  const { averages, yearlyProjection } = calculateAverages(entries);
+
+  useEffect(() => {
+    if (hydrated) {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(entries));
+    }
+  }, [entries, hydrated]);
+
+  const handleAdd = () => {
+    if (!date || !kwh || isNaN(Number(kwh))) return;
+    setEntries((prev) =>
+      [...prev, { date, kwh: Number(kwh) }].sort((a, b) =>
+        a.date.localeCompare(b.date)
+      )
+    );
+    setDate(getToday());
+    setKwh((entries.length > 0 ? Number(kwh) : 0).toString());
+  };
+
+  const handleDelete = (idx: number) => {
+    setEntries((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  if (!hydrated) return null;
 
   return (
-    <HydrateClient>
-      <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c] text-white">
-        <div className="container flex flex-col items-center justify-center gap-12 px-4 py-16">
-          <h1 className="text-5xl font-extrabold tracking-tight sm:text-[5rem]">
-            Create <span className="text-[hsl(280,100%,70%)]">T3</span> App
-          </h1>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-8">
-            <Link
-              className="flex max-w-xs flex-col gap-4 rounded-xl bg-white/10 p-4 hover:bg-white/20"
-              href="https://create.t3.gg/en/usage/first-steps"
-              target="_blank"
-            >
-              <h3 className="text-2xl font-bold">First Steps →</h3>
-              <div className="text-lg">
-                Just the basics - Everything you need to know to set up your
-                database and authentication.
-              </div>
-            </Link>
-            <Link
-              className="flex max-w-xs flex-col gap-4 rounded-xl bg-white/10 p-4 hover:bg-white/20"
-              href="https://create.t3.gg/en/introduction"
-              target="_blank"
-            >
-              <h3 className="text-2xl font-bold">Documentation →</h3>
-              <div className="text-lg">
-                Learn more about Create T3 App, the libraries it uses, and how
-                to deploy it.
-              </div>
-            </Link>
-          </div>
-          <div className="flex flex-col items-center gap-2">
-            <p className="text-2xl text-white">
-              {hello ? hello.greeting : "Loading tRPC query..."}
-            </p>
-          </div>
-
-          <LatestPost />
-        </div>
-      </main>
-    </HydrateClient>
+    <Container maxWidth="sm" sx={{ mt: 8 }}>
+      <Typography variant="h4" gutterBottom align="center">
+        Energy Usage Tracker
+      </Typography>
+      <Box display="flex" gap={2} mb={3}>
+        <TextField
+          label="Date"
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          InputLabelProps={{ shrink: true }}
+          fullWidth
+        />
+        <TextField
+          label="KWH"
+          type="number"
+          value={kwh}
+          onChange={(e) => setKwh(e.target.value)}
+          fullWidth
+        />
+        <Button variant="contained" onClick={handleAdd} sx={{ minWidth: 120 }}>
+          Add
+        </Button>
+      </Box>
+      <TableContainer component={Paper} sx={{ mb: 3 }}>
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              <TableCell>Date</TableCell>
+              <TableCell align="right">KWH</TableCell>
+              <TableCell align="right">Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {entries.map((entry, idx) => (
+              <TableRow key={idx}>
+                <TableCell>{entry.date}</TableCell>
+                <TableCell align="right">{entry.kwh}</TableCell>
+                <TableCell align="right">
+                  <IconButton aria-label="delete" onClick={() => handleDelete(idx)} size="small">
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+      {averages.length > 0 && (
+        <Box mb={2}>
+          <Typography variant="h6">Averages</Typography>
+          <TableContainer component={Paper}>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>From</TableCell>
+                  <TableCell>To</TableCell>
+                  <TableCell align="right">Days</TableCell>
+                  <TableCell align="right">KWH Used</TableCell>
+                  <TableCell align="right">Avg/Day</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {averages.map((a, idx) => (
+                  <TableRow key={idx}>
+                    <TableCell>{a.from}</TableCell>
+                    <TableCell>{a.to}</TableCell>
+                    <TableCell align="right">{a.days.toFixed(1)}</TableCell>
+                    <TableCell align="right">{a.kwhDiff.toFixed(2)}</TableCell>
+                    <TableCell align="right">{a.avg.toFixed(2)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
+      )}
+      {yearlyProjection && (
+        <Typography variant="h6" align="center" color="primary">
+          Projected 12-month Consumption: {yearlyProjection.toFixed(2)} KWH
+        </Typography>
+      )}
+    </Container>
   );
-}
+};
+
+export default EnergyUsagePage;
