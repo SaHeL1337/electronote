@@ -58,7 +58,8 @@ const EnergyUsagePage = () => {
     if (saved) setEntries(JSON.parse(saved));
     setHydrated(true);
   }, []);
-  const lastKwh = entries.length > 0 ? entries[entries.length - 1].kwh : 0;
+  const lastEntry = entries.length > 0 ? entries[entries.length - 1] : undefined;
+  const lastKwh = lastEntry ? lastEntry.kwh : 0;
   const [date, setDate] = useState(getToday());
   const [kwh, setKwh] = useState(lastKwh.toString());
   const { averages, yearlyProjection } = calculateAverages(entries);
@@ -77,7 +78,7 @@ const EnergyUsagePage = () => {
       )
     );
     setDate(getToday());
-    setKwh((entries.length > 0 ? Number(kwh) : 0).toString());
+    setKwh((entries.length > 0 ? entries[entries.length - 1]?.kwh ?? 0 : 0).toString());
   };
 
   const handleDelete = (idx: number) => {
