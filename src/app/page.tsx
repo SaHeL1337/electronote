@@ -55,7 +55,7 @@ const EnergyUsagePage = () => {
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
     const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (saved) setEntries(JSON.parse(saved));
+    if (saved) setEntries(JSON.parse(saved) as { date: string; kwh: number }[]);
     setHydrated(true);
   }, []);
   const lastEntry = entries.length > 0 ? entries[entries.length - 1] : undefined;
